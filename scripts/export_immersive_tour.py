@@ -56,6 +56,12 @@ def find_tour_cameras() -> list[tuple[int, bpy.types.Object]]:
 
 
 def resolve_target(index: int, camera: bpy.types.Object) -> Vector:
+    target_name = camera.get("target")
+    if target_name:
+        target = bpy.data.objects.get(str(target_name))
+        if target:
+            return target.matrix_world.translation.copy()
+
     target = bpy.data.objects.get(f"Target_{index:02d}") or bpy.data.objects.get(f"Target_{index}")
     if target:
         return target.matrix_world.translation.copy()
@@ -73,10 +79,11 @@ def export_tour(output_path: Path) -> None:
     points = []
     for index, camera in cameras:
         fov = camera.data.angle * 180 / 3.141592653589793
+        duration = float(camera.get("duration", DEFAULT_DURATION_SECONDS))
         points.append(
             {
                 "id": f"tour-{index:02d}",
-                "duration": DEFAULT_DURATION_SECONDS,
+                "duration": round(duration, 2),
                 "position": vector_to_dict(camera.matrix_world.translation),
                 "target": vector_to_dict(resolve_target(index, camera)),
                 "fov": round(float(fov), 2),
@@ -87,6 +94,7 @@ def export_tour(output_path: Path) -> None:
         "id": output_path.stem,
         "source": bpy.data.filepath,
         "units": "blender",
+        "coordinateSystem": "blender-z-up",
         "points": points,
     }
 

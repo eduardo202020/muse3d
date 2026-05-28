@@ -8,3 +8,6 @@ Los modelos se separan por tipo de uso dentro de MuseIQ:
 
 Los `.glb` finales de produccion se copian o sincronizan hacia
 `museiqApp/assets/models` cuando la app los necesita.
+
+Las rutas inmersivas no se guardan junto al `.glb`; viven en `../routes/` para
+que puedan versionarse, revisarse y ajustarse sin modificar el modelo.

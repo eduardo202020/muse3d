@@ -1,0 +1,115 @@
+{
+  "id": "lugar-walking-tour",
+  "model": "models/immersive/lugar.glb",
+  "source": "",
+  "units": "blender",
+  "coordinateSystem": "blender-z-up",
+  "description": "Ruta caminable con primer punto panoramico y margen de seguridad sobre el plano.",
+  "points": [
+    {
+      "id": "walk-01",
+      "duration": 6.4,
+      "position": {
+        "x": -11.6,
+        "y": -18.8,
+        "z": 4.25
+      },
+      "target": {
+        "x": -11.9,
+        "y": -8.4,
+        "z": 3.05
+      },
+      "fov": 72
+    },
+    {
+      "id": "walk-02",
+      "duration": 5.0,
+      "position": {
+        "x": -12.12026,
+        "y": -13.05874,
+        "z": 2.66334
+      },
+      "target": {
+        "x": -12.88238,
+        "y": -9.46464,
+        "z": 2.43334
+      },
+      "fov": 66
+    },
+    {
+      "id": "walk-03",
+      "duration": 4.6,
+      "position": {
+        "x": -13.209,
+        "y": -7.92431,
+        "z": 5.37877
+      },
+      "target": {
+        "x": -12.44688,
+        "y": -4.33022,
+        "z": 2.45421
+      },
+      "fov": 64
+    },
+    {
+      "id": "walk-04",
+      "duration": 4.6,
+      "position": {
+        "x": -12.12026,
+        "y": -2.78989,
+        "z": 3.20765
+      },
+      "target": {
+        "x": -10.59601,
+        "y": 0.8042,
+        "z": 5.45788
+      },
+      "fov": 64
+    },
+    {
+      "id": "walk-05",
+      "duration": 4.6,
+      "position": {
+        "x": -9.94277,
+        "y": 2.34453,
+        "z": 4.6359
+      },
+      "target": {
+        "x": -8.03746,
+        "y": 5.33961,
+        "z": 2.90843
+      },
+      "fov": 64
+    },
+    {
+      "id": "walk-06",
+      "duration": 4.6,
+      "position": {
+        "x": -7.2209,
+        "y": 6.62321,
+        "z": 3.15736
+      },
+      "target": {
+        "x": -6.83984,
+        "y": 10.21731,
+        "z": 3.91325
+      },
+      "fov": 64
+    },
+    {
+      "id": "walk-07",
+      "duration": 5.4,
+      "position": {
+        "x": -6.67653,
+        "y": 11.75764,
+        "z": 3.10556
+      },
+      "target": {
+        "x": -6.40586,
+        "y": 14.31054,
+        "z": 3.22655
+      },
+      "fov": 64
+    }
+  ]
+}

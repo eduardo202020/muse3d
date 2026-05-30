@@ -82,7 +82,7 @@ def export_tour(output_path: Path) -> None:
         duration = float(camera.get("duration", DEFAULT_DURATION_SECONDS))
         points.append(
             {
-                "id": f"tour-{index:02d}",
+                "id": str(camera.get("tourPointId", f"tour-{index:02d}")),
                 "duration": round(duration, 2),
                 "position": vector_to_dict(camera.matrix_world.translation),
                 "target": vector_to_dict(resolve_target(index, camera)),
@@ -90,13 +90,17 @@ def export_tour(output_path: Path) -> None:
             }
         )
 
+    first_camera = cameras[0][1]
     payload = {
-        "id": output_path.stem,
+        "id": str(first_camera.get("tourId", output_path.stem)),
+        "model": str(first_camera.get("tourModel", "")) or None,
         "source": bpy.data.filepath,
         "units": "blender",
         "coordinateSystem": "blender-z-up",
+        "description": str(first_camera.get("tourDescription", "")) or None,
         "points": points,
     }
+    payload = {key: value for key, value in payload.items() if value is not None}
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

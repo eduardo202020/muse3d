@@ -60,6 +60,24 @@ blender sala.blend --background --python muse3d/scripts/export_immersive_tour.py
 Si no existe un `Target_NN`, el script usa la direccion frontal de la camara para
 calcular el punto de mirada.
 
+## Editar manualmente una ruta existente
+
+Para reabrir una ruta JSON y convertirla en objetos editables:
+
+```bash
+blender sala.blend --python muse3d/scripts/prepare_manual_tour_editing.py -- muse3d/routes/lugar-walking-tour.json
+```
+
+El script crea:
+
+- `Tour_XX`: camaras editables, posicion del visitante.
+- `Target_XX`: empties editables, mirada del visitante.
+- `Label_XX`: etiquetas visibles para identificar el punto.
+- `Muse3D_Tour_Path`: curva visual que conecta el recorrido.
+
+Despues de ajustar la ruta visualmente, exporta de nuevo con
+`export_immersive_tour.py`.
+
 ## Reglas practicas para evitar problemas
 
 - Mantener el primer punto algo alejado y con `fov` amplio para presentar el

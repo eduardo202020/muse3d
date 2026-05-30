@@ -25,6 +25,8 @@ muse3d/
   routes/                       # Rutas inmersivas exportadas desde Blender
   scripts/
     setup_immersive_tour.py     # Crea una ruta base editable en Blender
+    prepare_manual_tour_editing.py
+                                  # Reconstruye un JSON como objetos editables
     export_immersive_tour.py    # Exportador Blender: camaras/targets -> JSON
 ```
 
@@ -65,6 +67,31 @@ El flujo actual genera una caminata, no un vuelo: las posiciones intentan quedar
 a altura de visitante, centradas en el espacio y con targets hacia el siguiente
 tramo del recorrido.
 
+## Flujo manual recomendado
+
+Para ajustar una ruta punto por punto sin perder lo generado automaticamente:
+
+1. Cargar el modelo en Blender.
+2. Reconstruir la ruta existente:
+
+   ```bash
+   blender sala.blend --python muse3d/scripts/prepare_manual_tour_editing.py -- muse3d/routes/lugar-walking-tour.json
+   ```
+
+3. En Blender, mover `Tour_01`, `Tour_02`, etc. para definir la posicion del
+   visitante.
+4. Mover `Target_01`, `Target_02`, etc. para definir hacia donde mira cada
+   tramo.
+5. Usar la curva `Muse3D_Tour_Path` y los labels `Label_XX` como guia visual.
+6. Exportar la ruta final:
+
+   ```bash
+   blender sala.blend --background --python muse3d/scripts/export_immersive_tour.py -- muse3d/routes/lugar-walking-tour.json
+   ```
+
+Tambien se puede hacer con Codex via MCP: pedir mover un punto especifico,
+exportar y probar en la app.
+
 ## Integracion con MuseIQ App
 
 La app no ejecuta Blender. Consume rutas exportadas desde Muse3D. En el prototipo
@@ -97,5 +124,5 @@ blender sala.blend --background --python muse3d/scripts/export_immersive_tour.py
 Validar scripts:
 
 ```bash
-python3 -m py_compile scripts/setup_immersive_tour.py scripts/export_immersive_tour.py
+python3 -m py_compile scripts/setup_immersive_tour.py scripts/prepare_manual_tour_editing.py scripts/export_immersive_tour.py
 ```

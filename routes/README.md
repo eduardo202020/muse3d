@@ -42,19 +42,27 @@ estos puntos para mover la camara del visitante en modo cardboard/SBS.
 
 ## Uso con Blender
 
-1. Importa el `.glb`.
-2. Ejecuta el generador automatico:
+El flujo recomendado es usar el asistente interactivo:
 
 ```bash
-blender sala.blend --python muse3d/scripts/setup_immersive_tour.py
+python3 muse3d.py
 ```
 
-3. Ajusta visualmente las camaras `Tour_01`, `Tour_02`, `Tour_03` y los
+Ese comando te guia para:
+
+1. seleccionar el `.glb`
+2. crear una ruta base de 10, 12, 15 o mas puntos
+3. abrir Blender y esperar tu ajuste manual
+4. exportar la ruta
+5. sincronizar la experiencia en la app
+
+En Blender, ajusta visualmente las camaras `Tour_01`, `Tour_02`, `Tour_03` y los
    empties `Target_01`, `Target_02`, `Target_03`.
-4. Exporta:
+
+Si necesitas operar manualmente sin el asistente:
 
 ```bash
-blender sala.blend --background --python muse3d/scripts/export_immersive_tour.py -- muse3d/routes/sala-litica-tour.json
+blender workspaces/lugar-tour.blend --background --python scripts/export_immersive_tour.py -- routes/sala-litica-tour.json
 ```
 
 Si no existe un `Target_NN`, el script usa la direccion frontal de la camara para

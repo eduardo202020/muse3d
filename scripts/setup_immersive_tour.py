@@ -1,42 +1,73 @@
 """Crea una ruta inmersiva base dentro de Blender.
 
-Este script no renderiza video. Solo coloca camaras `Tour_01...` y targets
-`Target_01...` alrededor del modelo para que Muse3D pueda exportarlos a JSON.
+Este script no usa IA ni renderiza video. Importa un GLB opcional, calcula sus
+limites y crea camaras `Tour_01...` con targets `Target_01...` para que la ruta
+pueda ajustarse manualmente en Blender y exportarse a JSON.
 
-Uso desde terminal:
-  blender sala.blend --python muse3d/scripts/setup_immersive_tour.py
+Uso rapido:
+  blender --python muse3d/scripts/setup_immersive_tour.py -- models/immersive/sala.glb --points 12
 
-Uso desde Blender:
-  1. Abre el archivo o importa el GLB.
-  2. Ejecuta este script desde el panel de scripting.
-  3. Ajusta visualmente las camaras y targets si quieres afinar el tour.
-  4. Exporta con `export_immersive_tour.py`.
+Uso sobre una escena ya abierta:
+  blender sala.blend --python muse3d/scripts/setup_immersive_tour.py -- --points 12
 """
 
 from __future__ import annotations
 
+import argparse
 import math
 import re
 import sys
+from pathlib import Path
 
 import bpy
 from mathutils import Vector
 
 
-TOUR_CAMERA_RE = re.compile(r"^Tour_\d+$", re.IGNORECASE)
-TARGET_RE = re.compile(r"^Target_\d+$", re.IGNORECASE)
 TOUR_COLLECTION_NAME = "Muse3D_Tour"
+TOUR_OBJECT_RE = re.compile(r"^(Tour|Target|Label)_\d+$", re.IGNORECASE)
+TOUR_PATH_NAME = "Muse3D_Tour_Path"
 DEFAULT_CAMERA_FOV_DEGREES = 64
-DEFAULT_POINT_DURATION_SECONDS = 6
+DEFAULT_POINT_DURATION_SECONDS = 5.2
+DEFAULT_POINT_COUNT = 12
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def parse_flag(name: str) -> bool:
+def parse_args() -> argparse.Namespace:
     if "--" in sys.argv:
         args = sys.argv[sys.argv.index("--") + 1 :]
     else:
         args = []
 
-    return name in args
+    parser = argparse.ArgumentParser(description="Crear ruta inmersiva editable.")
+    parser.add_argument("model", nargs="?", help="GLB de sala/lugar a importar.")
+    parser.add_argument("--points", type=int, default=DEFAULT_POINT_COUNT)
+    parser.add_argument("--route-id", default="")
+    parser.add_argument("--route-model", default="")
+    parser.add_argument(
+        "--description",
+        default="Ruta caminable generada automaticamente para ajuste manual.",
+    )
+    parser.add_argument("--save-blend", default="")
+    parser.add_argument("--keep-scene", action="store_true")
+    parser.add_argument("--keep-existing", action="store_true")
+    return parser.parse_args(args)
+
+
+def slug_from_path(path: Path | None) -> str:
+    if not path:
+        return "immersive"
+
+    return re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-") or "immersive"
+
+
+def guess_route_model(model_path: Path | None) -> str:
+    if not model_path:
+        return ""
+
+    try:
+        return model_path.resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return model_path.name
 
 
 def get_tour_collection() -> bpy.types.Collection:
@@ -49,21 +80,39 @@ def get_tour_collection() -> bpy.types.Collection:
     return collection
 
 
+def clear_scene() -> None:
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete()
+
+
 def clear_existing_tour_objects() -> None:
     for obj in list(bpy.context.scene.objects):
-        if TOUR_CAMERA_RE.match(obj.name) or TARGET_RE.match(obj.name):
+        if TOUR_OBJECT_RE.match(obj.name) or obj.name == TOUR_PATH_NAME:
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
+def import_glb(model_path: Path) -> None:
+    if not model_path.exists():
+        raise RuntimeError(f"No existe el GLB: {model_path}")
+
+    bpy.ops.import_scene.gltf(filepath=str(model_path))
+
+
+def is_tour_object(obj: bpy.types.Object) -> bool:
+    return any(collection.name == TOUR_COLLECTION_NAME for collection in obj.users_collection)
+
+
 def get_mesh_objects() -> list[bpy.types.Object]:
-    selected_meshes = [obj for obj in bpy.context.selected_objects if obj.type == "MESH"]
+    selected_meshes = [
+        obj for obj in bpy.context.selected_objects if obj.type == "MESH" and not is_tour_object(obj)
+    ]
     if selected_meshes:
         return selected_meshes
 
     return [
         obj
         for obj in bpy.context.scene.objects
-        if obj.type == "MESH" and obj.name not in {TOUR_COLLECTION_NAME}
+        if obj.type == "MESH" and not is_tour_object(obj)
     ]
 
 
@@ -114,9 +163,27 @@ def create_target(index: int, location: Vector, collection: bpy.types.Collection
     bpy.ops.object.empty_add(type="SPHERE", location=location)
     target = bpy.context.object
     target.name = f"Target_{index:02d}"
-    target.empty_display_size = 0.16
+    target.empty_display_size = 0.24
+    target.show_name = True
     link_to_tour_collection(target, collection)
     return target
+
+
+def create_label(
+    index: int,
+    location: Vector,
+    point_id: str,
+    collection: bpy.types.Collection,
+) -> bpy.types.Object:
+    bpy.ops.object.text_add(location=location + Vector((0, 0, 0.42)))
+    label = bpy.context.object
+    label.name = f"Label_{index:02d}"
+    label.data.body = f"{index:02d}\\n{point_id}"
+    label.data.align_x = "CENTER"
+    label.data.align_y = "CENTER"
+    label.data.size = 0.38
+    link_to_tour_collection(label, collection)
+    return label
 
 
 def create_camera(
@@ -124,65 +191,156 @@ def create_camera(
     location: Vector,
     target: bpy.types.Object,
     collection: bpy.types.Collection,
+    *,
+    duration: float,
+    fov: float,
+    point_id: str,
+    route_description: str,
+    route_id: str,
+    route_model: str,
 ) -> bpy.types.Object:
     bpy.ops.object.camera_add(location=location)
     camera = bpy.context.object
     camera.name = f"Tour_{index:02d}"
     camera.data.name = f"Tour_{index:02d}_Camera"
-    camera.data.angle = math.radians(DEFAULT_CAMERA_FOV_DEGREES)
-    camera["duration"] = DEFAULT_POINT_DURATION_SECONDS
+    camera.data.angle = math.radians(fov)
+    camera["duration"] = duration
     camera["target"] = target.name
+    camera["tourPointId"] = point_id
+    camera["tourId"] = route_id
+    camera["tourModel"] = route_model
+    camera["tourDescription"] = route_description
+    camera.show_name = True
     look_at(camera, target.location)
     link_to_tour_collection(camera, collection)
     return camera
 
 
-def build_default_route(min_corner: Vector, max_corner: Vector) -> list[tuple[Vector, Vector]]:
+def create_path_curve(points: list[Vector], collection: bpy.types.Collection) -> None:
+    if len(points) < 2:
+        return
+
+    curve = bpy.data.curves.new(TOUR_PATH_NAME, type="CURVE")
+    curve.dimensions = "3D"
+    curve.resolution_u = 2
+    curve.bevel_depth = 0.035
+    curve.bevel_resolution = 3
+
+    polyline = curve.splines.new(type="POLY")
+    polyline.points.add(len(points) - 1)
+    for point, location in zip(polyline.points, points):
+        point.co = (location.x, location.y, location.z, 1)
+
+    obj = bpy.data.objects.new(TOUR_PATH_NAME, curve)
+    collection.objects.link(obj)
+
+
+def build_default_route(
+    min_corner: Vector,
+    max_corner: Vector,
+    point_count: int,
+) -> list[tuple[str, Vector, Vector, float, float]]:
+    count = max(2, min(point_count, 30))
     center = (min_corner + max_corner) * 0.5
     size = max_corner - min_corner
     width = max(size.x, 1)
     depth = max(size.y, 1)
     height = max(size.z, 1)
-    visitor_z = min_corner.z + max(height * 0.48, 1.45)
-    close_z = min_corner.z + max(height * 0.42, 1.25)
-    target_z = min_corner.z + max(height * 0.36, 1.05)
+    eye_z = min_corner.z + max(1.55, height * 0.18)
+    close_eye_z = min_corner.z + max(1.35, height * 0.14)
+    target_z = min_corner.z + max(1.35, height * 0.16)
+    panoramic_z = eye_z + max(0.7, height * 0.12)
+    route: list[tuple[str, Vector, Vector, float, float]] = []
 
-    def pos(x: float, y: float, z: float = visitor_z) -> Vector:
-        return Vector((center.x + width * x, center.y + depth * y, z))
+    first_position = Vector((center.x - width * 0.42, center.y - depth * 0.55, panoramic_z))
+    first_target = Vector((center.x - width * 0.04, center.y - depth * 0.08, target_z))
+    route.append(("walk-01", first_position, first_target, 6.4, 72.0))
 
-    def target(x: float, y: float, z: float = target_z) -> Vector:
-        return Vector((center.x + width * x, center.y + depth * y, z))
+    remaining = count - 1
+    for item in range(remaining):
+        t = item / max(remaining - 1, 1)
+        next_t = min(1.0, t + 1 / max(remaining - 1, 1))
+        wave = math.sin(t * math.pi * 2.4) * 0.1
+        next_wave = math.sin(next_t * math.pi * 2.4) * 0.06
+        x_factor = -0.32 + 0.64 * t + wave
+        y_factor = -0.36 + 0.78 * t
+        next_x_factor = -0.32 + 0.64 * next_t + next_wave
+        next_y_factor = -0.36 + 0.78 * next_t
+        height_wave = math.sin(t * math.pi * 1.8) * height * 0.025
+        position = Vector(
+            (
+                center.x + width * x_factor,
+                center.y + depth * y_factor,
+                close_eye_z + height_wave,
+            )
+        )
+        target = Vector(
+            (
+                center.x + width * next_x_factor,
+                center.y + depth * next_y_factor,
+                target_z + height * 0.035,
+            )
+        )
+        point_id = f"walk-{item + 2:02d}"
+        fov = 68.0 if item == 0 else DEFAULT_CAMERA_FOV_DEGREES
+        route.append((point_id, position, target, DEFAULT_POINT_DURATION_SECONDS, fov))
 
-    return [
-        (pos(-0.08, -0.28, visitor_z), target(-0.1, -0.14, target_z)),
-        (pos(-0.12, -0.16, visitor_z), target(-0.08, -0.04, target_z)),
-        (pos(-0.08, -0.04, close_z), target(0.0, 0.08, target_z + height * 0.06)),
-        (pos(0.0, 0.08, close_z), target(0.08, 0.18, target_z)),
-        (pos(0.1, 0.18, visitor_z), target(0.12, 0.3, target_z)),
-        (pos(0.12, 0.3, visitor_z), target(0.12, 0.42, target_z)),
-    ]
+    return route
 
 
 def setup_tour() -> None:
-    keep_existing = parse_flag("--keep-existing")
-    if not keep_existing:
+    args = parse_args()
+    model_path = Path(args.model).expanduser().resolve() if args.model else None
+    route_slug = slug_from_path(model_path)
+    route_id = args.route_id or f"{route_slug}-walking-tour"
+    route_model = args.route_model or guess_route_model(model_path)
+
+    if model_path and not args.keep_scene:
+        clear_scene()
+    if model_path:
+        import_glb(model_path)
+    if not args.keep_existing:
         clear_existing_tour_objects()
 
     mesh_objects = get_mesh_objects()
     min_corner, max_corner = calculate_world_bounds(mesh_objects)
     collection = get_tour_collection()
-    route = build_default_route(min_corner, max_corner)
+    route = build_default_route(min_corner, max_corner, args.points)
 
     cameras = []
-    for index, (camera_position, target_position) in enumerate(route, start=1):
+    camera_locations = []
+    for index, (point_id, camera_position, target_position, duration, fov) in enumerate(
+        route,
+        start=1,
+    ):
         target = create_target(index, target_position, collection)
-        camera = create_camera(index, camera_position, target, collection)
+        camera = create_camera(
+            index,
+            camera_position,
+            target,
+            collection,
+            duration=duration,
+            fov=fov,
+            point_id=point_id,
+            route_description=args.description,
+            route_id=route_id,
+            route_model=route_model,
+        )
+        create_label(index, camera_position, point_id, collection)
         cameras.append(camera)
+        camera_locations.append(camera_position)
 
+    create_path_curve(camera_locations, collection)
     if cameras:
         bpy.context.scene.camera = cameras[0]
 
+    if args.save_blend:
+        save_path = Path(args.save_blend).expanduser().resolve()
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        bpy.ops.wm.save_as_mainfile(filepath=str(save_path))
+
     print(f"[Muse3D] Tour base creado con {len(route)} puntos en coleccion {TOUR_COLLECTION_NAME}")
+    print(f"[Muse3D] routeId={route_id} routeModel={route_model or '--'}")
     print("[Muse3D] Ajusta Tour_XX y Target_XX visualmente, luego exporta el JSON.")
 
 

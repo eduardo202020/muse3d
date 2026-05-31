@@ -7,3 +7,6 @@ __pycache__/
 *.blend2
 *.blend@
 exports/tmp/
+workspaces/*.blend
+workspaces/*.blend1
+!workspaces/.gitkeep

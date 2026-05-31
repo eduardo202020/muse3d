@@ -1,0 +1,13 @@
+[
+  {
+    "id": "immersive-sala-1",
+    "roomId": "SALA_1",
+    "title": "Sala inmersiva Sipan",
+    "promptTitle": "Modo inmersivo disponible",
+    "description": "Esta sala ofrece una reconstruccion 3D para recorrer el espacio desde dentro antes de continuar con la visita normal.",
+    "ctaLabel": "Entrar al modo inmersivo",
+    "modelAssetPath": "assets/models/immersive/lugar.glb",
+    "modelLabel": "lugar.glb",
+    "tourExportName": "lugarWalkingTour"
+  }
+]

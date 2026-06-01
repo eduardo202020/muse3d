@@ -9,4 +9,6 @@ __pycache__/
 exports/tmp/
 workspaces/*.blend
 workspaces/*.blend1
+workspaces/*.commands.json
+workspaces/*.status.json
 !workspaces/.gitkeep

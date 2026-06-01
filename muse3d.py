@@ -18,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -26,11 +27,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 APP_ROOT = PROJECT_ROOT.parent / "museiqApp"
 MANIFEST_PATH = PROJECT_ROOT / "experiences" / "immersive-experiences.json"
 SETUP_SCRIPT = PROJECT_ROOT / "scripts" / "setup_immersive_tour.py"
-EXPORT_SCRIPT = PROJECT_ROOT / "scripts" / "export_immersive_tour.py"
 SYNC_ROUTE_SCRIPT = PROJECT_ROOT / "scripts" / "sync_route_to_app.py"
 GENERATED_APP_FILE = APP_ROOT / "lib" / "immersive-experiences.generated.ts"
 APP_MODELS_DIR = APP_ROOT / "assets" / "models" / "immersive"
 DEFAULT_ROOM_ID = "SALA_1"
+MAX_ADDED_PAIR_COUNT = 24
 
 
 def slugify(value: str) -> str:
@@ -259,6 +260,50 @@ def run_command(command: list[str]) -> None:
     subprocess.run(command, check=True)
 
 
+def launch_command(command: list[str]) -> subprocess.Popen:
+    print()
+    print("[Muse3D] Abriendo:")
+    print(" ".join(command))
+    return subprocess.Popen(command)
+
+
+def send_blender_command(
+    command_file: Path,
+    status_file: Path,
+    payload: dict[str, Any],
+    *,
+    timeout_seconds: float = 30,
+) -> dict[str, Any]:
+    command_file.parent.mkdir(parents=True, exist_ok=True)
+    status_file.parent.mkdir(parents=True, exist_ok=True)
+    command_id = str(time.time_ns())
+    command_payload = {
+        "id": command_id,
+        **payload,
+    }
+
+    command_file.write_text(json.dumps(command_payload, indent=2), encoding="utf-8")
+    started_at = time.time()
+
+    while time.time() - started_at < timeout_seconds:
+        if status_file.exists():
+            try:
+                status = json.loads(status_file.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                time.sleep(0.2)
+                continue
+
+            if str(status.get("id")) == command_id:
+                if status.get("status") == "done":
+                    return status
+                if status.get("status") == "error":
+                    raise RuntimeError(str(status.get("message", "Error en Blender")))
+
+        time.sleep(0.25)
+
+    raise RuntimeError("No hubo respuesta del Blender abierto. Revisa que siga ejecutandose.")
+
+
 def select_or_enter_model() -> Path:
     glbs = discover_immersive_glbs()
     selected = prompt_choice("Selecciona el GLB del lugar:", glbs)
@@ -272,65 +317,93 @@ def select_or_enter_model() -> Path:
         print("No encontre ese GLB. Revisa la ruta.")
 
 
-def create_or_update_experience(blender_bin: str) -> None:
-    model_path = select_or_enter_model()
-    slug = slugify(model_path.stem)
-    route_id = prompt_text("ID de ruta", f"{slug}-walking-tour")
-    experience_id = prompt_text("ID de experiencia", f"immersive-{slug}")
-    export_name = prompt_text("Nombre TS del tour", to_camel_case(route_id))
-    room_id = prompt_text("Room ID de la app", DEFAULT_ROOM_ID)
-    title = prompt_text("Titulo visible", title_from_slug(slug))
-    prompt_title = prompt_text("Titulo del modal", "Modo inmersivo disponible")
-    description = prompt_text(
-        "Descripcion",
-        "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
-    )
-    cta_label = prompt_text("Texto CTA", "Entrar al modo inmersivo")
-    points = prompt_int("Cantidad de puntos", 12)
+def preview_tour_in_blender(command_file: Path, status_file: Path) -> None:
+    try:
+        status = send_blender_command(
+            command_file,
+            status_file,
+            {
+                "action": "preview",
+                "fps": 24,
+                "play": True,
+                "startFrame": 1,
+            },
+            timeout_seconds=15,
+        )
+        print(f"[Muse3D] {status.get('message', 'Preview actualizado')}")
+        print("[Muse3D] Mira la timeline de Blender: la camara Muse3D_Preview_Camera ya esta animada.")
+    except RuntimeError as error:
+        print(f"[Muse3D] No se pudo previsualizar en vivo: {error}")
 
-    workspace_path = PROJECT_ROOT / "workspaces" / f"{slug}-tour.blend"
-    route_path = PROJECT_ROOT / "routes" / f"{route_id}.json"
-    route_model = route_model_reference(model_path)
 
-    print()
-    print("[Muse3D] Se abrira Blender con la ruta editable.")
-    print("[Muse3D] Ajusta Tour_XX y Target_XX, guarda el .blend y cierra Blender.")
+def add_tour_pairs_in_blender(command_file: Path, status_file: Path) -> None:
+    requested_count = prompt_int("Cantidad de pares Tour/Target a agregar", 1)
+    count = min(requested_count, MAX_ADDED_PAIR_COUNT)
+    if count != requested_count:
+        print(f"[Muse3D] Por seguridad se agregaran {MAX_ADDED_PAIR_COUNT} pares como maximo.")
 
-    run_command(
-        [
-            blender_bin,
-            "--python",
-            str(SETUP_SCRIPT),
-            "--",
-            str(model_path),
-            "--points",
-            str(points),
-            "--route-id",
-            route_id,
-            "--route-model",
-            route_model,
-            "--description",
-            description,
-            "--save-blend",
-            str(workspace_path),
-        ]
-    )
+    try:
+        status = send_blender_command(
+            command_file,
+            status_file,
+            {
+                "action": "add_pairs",
+                "count": count,
+            },
+            timeout_seconds=15,
+        )
+        print(f"[Muse3D] {status.get('message', 'Pares Tour/Target creados')}")
+        print("[Muse3D] Mueve los nuevos Tour_XX y Target_XX en Blender, luego previsualiza.")
+    except RuntimeError as error:
+        print(f"[Muse3D] No se pudieron agregar pares en vivo: {error}")
 
-    if not prompt_yes_no("Exportar ahora la ruta ajustada", default=True):
-        print("[Muse3D] Puedes volver luego y elegir esta opcion para exportar.")
-        return
 
-    run_command(
-        [
-            blender_bin,
-            str(workspace_path),
-            "--background",
-            "--python",
-            str(EXPORT_SCRIPT),
-            "--",
-            str(route_path),
-        ]
-    )
+def refresh_blender_view(command_file: Path, status_file: Path) -> None:
+    try:
+        status = send_blender_command(
+            command_file,
+            status_file,
+            {
+                "action": "refresh_view",
+            },
+            timeout_seconds=15,
+        )
+        print(f"[Muse3D] {status.get('message', 'Vista actualizada')}")
+    except RuntimeError as error:
+        print(f"[Muse3D] No se pudo actualizar la vista en vivo: {error}")
+
+
+def export_and_sync_experience(
+    *,
+    command_file: Path,
+    cta_label: str,
+    description: str,
+    experience_id: str,
+    export_name: str,
+    model_path: Path,
+    prompt_title: str,
+    room_id: str,
+    route_path: Path,
+    status_file: Path,
+    title: str,
+) -> bool:
+    if not prompt_yes_no("Exportar y sincronizar ahora", default=True):
+        return False
+
+    try:
+        status = send_blender_command(
+            command_file,
+            status_file,
+            {
+                "action": "export",
+                "output": str(route_path),
+            },
+            timeout_seconds=30,
+        )
+        print(f"[Muse3D] {status.get('message', 'Ruta exportada')}")
+    except RuntimeError as error:
+        print(f"[Muse3D] No se pudo exportar desde Blender vivo: {error}")
+        return False
 
     run_command(
         [
@@ -361,6 +434,138 @@ def create_or_update_experience(blender_bin: str) -> None:
     print("[Muse3D] Experiencia lista en la app.")
     print(f"[Muse3D] Ruta: {route_path}")
     print(f"[Muse3D] Experiencia: {experience_id}")
+    return True
+
+
+def run_blender_edit_loop(
+    *,
+    blender_bin: str,
+    cta_label: str,
+    description: str,
+    experience_id: str,
+    export_name: str,
+    model_path: Path,
+    points: int,
+    prompt_title: str,
+    room_id: str,
+    route_id: str,
+    route_model: str,
+    route_path: Path,
+    title: str,
+    workspace_path: Path,
+) -> None:
+    command_file = workspace_path.with_suffix(".commands.json")
+    status_file = workspace_path.with_suffix(".status.json")
+    if command_file.exists():
+        command_file.unlink()
+    if status_file.exists():
+        status_file.unlink()
+
+    print()
+    print("[Muse3D] Se abrira Blender con la ruta editable.")
+    print("[Muse3D] Mientras ajustas, deja esta terminal abierta como panel de control.")
+    print("[Muse3D] Puedes previsualizar/exportar sin guardar: se usara la escena viva de Blender.")
+
+    blender_process = launch_command(
+        [
+            blender_bin,
+            "--python",
+            str(SETUP_SCRIPT),
+            "--",
+            str(model_path),
+            "--points",
+            str(points),
+            "--route-id",
+            route_id,
+            "--route-model",
+            route_model,
+            "--description",
+            description,
+            "--save-blend",
+            str(workspace_path),
+            "--command-file",
+            str(command_file),
+            "--status-file",
+            str(status_file),
+        ]
+    )
+
+    while True:
+        process_state = "abierto" if blender_process.poll() is None else "cerrado"
+        print()
+        print(f"Muse3D - Edicion de tour ({process_state})")
+        print("1. Previsualizar recorrido en Blender")
+        print("2. Anadir pares Tour/Target")
+        print("3. Exportar y sincronizar con la app")
+        print("4. Actualizar materiales/cielo en Blender")
+        print("5. Terminar sin exportar")
+        option = input("Seleccion: ").strip()
+
+        if option == "1":
+            preview_tour_in_blender(command_file, status_file)
+        elif option == "2":
+            add_tour_pairs_in_blender(command_file, status_file)
+        elif option == "3":
+            exported = export_and_sync_experience(
+                command_file=command_file,
+                cta_label=cta_label,
+                description=description,
+                experience_id=experience_id,
+                export_name=export_name,
+                model_path=model_path,
+                prompt_title=prompt_title,
+                room_id=room_id,
+                route_path=route_path,
+                status_file=status_file,
+                title=title,
+            )
+            if exported:
+                return
+        elif option == "4":
+            refresh_blender_view(command_file, status_file)
+        elif option == "5":
+            print("[Muse3D] Flujo terminado. Blender queda bajo tu control si sigue abierto.")
+            return
+        else:
+            print("Seleccion no valida.")
+
+
+def create_or_update_experience(blender_bin: str) -> None:
+    model_path = select_or_enter_model()
+    slug = slugify(model_path.stem)
+    route_id = prompt_text("ID de ruta", f"{slug}-walking-tour")
+    experience_id = prompt_text("ID de experiencia", f"immersive-{slug}")
+    export_name = prompt_text("Nombre TS del tour", to_camel_case(route_id))
+    room_id = prompt_text("Room ID de la app", DEFAULT_ROOM_ID)
+    title = prompt_text("Titulo visible", title_from_slug(slug))
+    prompt_title = prompt_text("Titulo del modal", "Modo inmersivo disponible")
+    description = prompt_text(
+        "Descripcion",
+        "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
+    )
+    cta_label = prompt_text("Texto CTA", "Entrar al modo inmersivo")
+    points = prompt_int("Cantidad de puntos", 12)
+
+    workspace_path = PROJECT_ROOT / "workspaces" / f"{slug}-tour.blend"
+    route_path = PROJECT_ROOT / "routes" / f"{route_id}.json"
+    route_model = route_model_reference(model_path)
+
+    run_blender_edit_loop(
+        blender_bin=blender_bin,
+        cta_label=cta_label,
+        description=description,
+        experience_id=experience_id,
+        export_name=export_name,
+        model_path=model_path,
+        points=points,
+        prompt_title=prompt_title,
+        room_id=room_id,
+        route_id=route_id,
+        route_model=route_model,
+        route_path=route_path,
+        title=title,
+        workspace_path=workspace_path,
+    )
 
 
 def sync_app_from_manifest() -> None:

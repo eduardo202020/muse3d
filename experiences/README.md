@@ -15,3 +15,7 @@ Normalmente no hace falta editar este archivo a mano. Usa:
 ```bash
 python3 muse3d.py
 ```
+
+La app muestra estas entradas como experiencias seleccionables por sala. Esto
+permite probar varias reconstrucciones (`lugar`, `puerta monumental`, `ushnu`,
+etc.) sin reemplazar manualmente assets dentro de `sala-inmersiva`.

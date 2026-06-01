@@ -1,0 +1,70 @@
+{
+  "id": "ushnu-2-walking-tour",
+  "model": "models/immersive/ushnu-2.glb",
+  "source": "/home/eduardo/proyectos/iot/museiq/muse3d/workspaces/ushnu-2-tour.blend",
+  "units": "blender",
+  "coordinateSystem": "blender-z-up",
+  "description": "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
+  "points": [
+    {
+      "id": "walk-01",
+      "duration": 6.4,
+      "position": {
+        "x": 22.81074,
+        "y": -19.55761,
+        "z": -2.02402
+      },
+      "target": {
+        "x": 17.43894,
+        "y": -19.62534,
+        "z": 0.17339
+      },
+      "fov": 72.0
+    },
+    {
+      "id": "walk-02",
+      "duration": 5.2,
+      "position": {
+        "x": 14.82535,
+        "y": -19.57783,
+        "z": 2.25721
+      },
+      "target": {
+        "x": 8.6395,
+        "y": -19.07686,
+        "z": 8.10425
+      },
+      "fov": 64.45
+    },
+    {
+      "id": "walk-03",
+      "duration": 5.2,
+      "position": {
+        "x": 0.81444,
+        "y": -17.95535,
+        "z": 11.86904
+      },
+      "target": {
+        "x": 16.61668,
+        "y": -18.33197,
+        "z": 4.46088
+      },
+      "fov": 64.0
+    },
+    {
+      "id": "walk-04",
+      "duration": 5.2,
+      "position": {
+        "x": -11.56368,
+        "y": -17.15866,
+        "z": 12.97525
+      },
+      "target": {
+        "x": 10.36524,
+        "y": -18.64228,
+        "z": 9.65764
+      },
+      "fov": 64.0
+    }
+  ]
+}

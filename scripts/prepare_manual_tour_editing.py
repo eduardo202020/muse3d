@@ -30,6 +30,8 @@ TOUR_OBJECT_RE = re.compile(r"^(Tour|Target|Label)_\d+$", re.IGNORECASE)
 TOUR_PATH_NAME = "Muse3D_Tour_Path"
 DEFAULT_CAMERA_FOV_DEGREES = 64
 DEFAULT_DURATION_SECONDS = 6
+MIN_CAMERA_FOV_DEGREES = 35
+MAX_CAMERA_FOV_DEGREES = 82
 
 
 def parse_route_path() -> Path:
@@ -103,7 +105,16 @@ def create_camera(
     camera = bpy.context.object
     camera.name = f"Tour_{index:02d}"
     camera.data.name = f"Tour_{index:02d}_Camera"
-    camera.data.angle = math.radians(float(point.get("fov", DEFAULT_CAMERA_FOV_DEGREES)))
+    fov = float(point.get("fov", DEFAULT_CAMERA_FOV_DEGREES))
+    if fov < MIN_CAMERA_FOV_DEGREES or fov > MAX_CAMERA_FOV_DEGREES:
+        fov = DEFAULT_CAMERA_FOV_DEGREES
+    try:
+        camera.data.lens_unit = "FOV"
+    except TypeError:
+        pass
+    camera.data.angle = math.radians(fov)
+    camera.data.clip_start = 0.05
+    camera.data.clip_end = 1000
     camera["duration"] = float(point.get("duration", DEFAULT_DURATION_SECONDS))
     camera["target"] = target.name
     camera["tourPointId"] = str(point.get("id", f"tour-{index:02d}"))

@@ -11,6 +11,7 @@ Ejemplo:
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -22,6 +23,9 @@ from mathutils import Vector
 TOUR_CAMERA_RE = re.compile(r"^Tour_(\d+)$", re.IGNORECASE)
 DEFAULT_DURATION_SECONDS = 6
 DEFAULT_LOOK_DISTANCE = 3
+DEFAULT_EXPORT_FOV_DEGREES = 64
+MIN_EXPORT_FOV_DEGREES = 35
+MAX_EXPORT_FOV_DEGREES = 82
 
 
 def parse_output_path() -> Path:
@@ -71,6 +75,18 @@ def resolve_target(index: int, camera: bpy.types.Object) -> Vector:
     return camera.matrix_world.translation + forward.normalized() * DEFAULT_LOOK_DISTANCE
 
 
+def safe_fov_degrees(camera: bpy.types.Object) -> float:
+    fov = math.degrees(float(camera.data.angle))
+    if fov < MIN_EXPORT_FOV_DEGREES or fov > MAX_EXPORT_FOV_DEGREES:
+        print(
+            f"[Muse3D] FOV extremo en {camera.name}: {fov:.2f}. "
+            f"Usando {DEFAULT_EXPORT_FOV_DEGREES}."
+        )
+        return DEFAULT_EXPORT_FOV_DEGREES
+
+    return fov
+
+
 def export_tour(output_path: Path) -> None:
     cameras = find_tour_cameras()
     if not cameras:
@@ -78,7 +94,7 @@ def export_tour(output_path: Path) -> None:
 
     points = []
     for index, camera in cameras:
-        fov = camera.data.angle * 180 / 3.141592653589793
+        fov = safe_fov_degrees(camera)
         duration = float(camera.get("duration", DEFAULT_DURATION_SECONDS))
         points.append(
             {

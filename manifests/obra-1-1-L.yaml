@@ -1,0 +1,41 @@
+artwork_id: obra-1-1-L
+title: Senor de Sipan
+museum_id: tumbas-reales-de-sipan
+room_id: SALA_1
+culture: Moche
+period: Moche Medio
+
+source:
+  # Replace this placeholder with the real Blender file or use source.model for an existing GLB.
+  blend: assets/sources/tumbas-reales-de-sipan/obra-1-1-L/model.blend
+  object_names: []
+
+output:
+  slug: obra-1-1-L
+  filename: model.glb
+  preview: preview.webp
+
+transform:
+  # Scale/position/rotation are stored in metadata for AR placement.
+  # Rotation is expressed in degrees.
+  scale: 0.7
+  position: [0, -0.5, -2]
+  rotation: [0, 0, 0]
+  center_to_origin: true
+  apply_export_transform: false
+
+optimization:
+  enabled: true
+  texture_size: 1024
+  texture_compress: webp
+  compress: draco
+  simplify: false
+  simplify_ratio: 0.75
+
+ar:
+  fallback_mode: viewer_3d
+
+hotspots:
+  - id: emblema_poder
+    label: Emblema de poder
+    query: Explica el simbolo de poder asociado al Senor de Sipan segun el corpus curatorial.

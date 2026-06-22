@@ -1,0 +1,36 @@
+{
+  "total": 1,
+  "items": [
+    {
+      "artwork_id": "smoke-cube",
+      "title": "Muse3D Smoke Cube",
+      "museum_id": "museiq-demo",
+      "room_id": "DEMO",
+      "culture": "Demo",
+      "period": "Stack test",
+      "model_3d": {
+        "url": "/media/ar/museiq-demo/smoke-cube/model.glb",
+        "format": "GLB",
+        "scale": 1.0,
+        "position": [
+          0.0,
+          -0.5,
+          -2.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fallback_mode": "viewer_3d"
+      },
+      "hotspots": [
+        {
+          "id": "cara_frontal",
+          "label": "Cara frontal",
+          "query": "Explica este punto de prueba del modelo 3D."
+        }
+      ]
+    }
+  ]
+}

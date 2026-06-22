@@ -1,0 +1,36 @@
+artwork_id: smoke-cube
+title: Muse3D Smoke Cube
+museum_id: museiq-demo
+room_id: DEMO
+culture: Demo
+period: Stack test
+
+source:
+  blend: assets/sources/smoke/cube/model.blend
+  object_names: []
+
+output:
+  slug: smoke-cube
+  filename: model.glb
+
+transform:
+  scale: 1.0
+  position: [0, -0.5, -2]
+  rotation: [0, 0, 0]
+  center_to_origin: true
+  apply_export_transform: false
+
+optimization:
+  enabled: true
+  texture_size: 512
+  texture_compress: webp
+  compress: draco
+  simplify: false
+
+ar:
+  fallback_mode: viewer_3d
+
+hotspots:
+  - id: cara_frontal
+    label: Cara frontal
+    query: Explica este punto de prueba del modelo 3D.

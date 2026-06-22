@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "muse3d"
+version = "0.1.0"
+description = "Pipeline open source para construir, optimizar y publicar modelos GLB de MuseIQ."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "PyYAML>=6.0.2"
+]
+
+[project.scripts]
+muse3d = "muse3d.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["muse3d*"]
+
+[tool.muse3d]
+default_muserag_ar_dir = "../museRAG/assets/ar"

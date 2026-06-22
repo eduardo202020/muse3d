@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "muse3d: doctor",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m muse3d doctor",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "muse3d: install node tools",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "muse3d: dry-run example",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m muse3d build obra-1-1-L --dry-run --skip-validate",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "muse3d: build example",
+      "type": "shell",
+      "command": ".\\.venv\\Scripts\\python.exe -m muse3d build obra-1-1-L --publish",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

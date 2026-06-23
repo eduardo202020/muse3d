@@ -174,3 +174,31 @@ The metadata shape is ready for MuseRAG and the mobile app:
 ## Notes
 
 This first version does not create artistic geometry by itself. Modeling, sculpting, photogrammetry cleanup, and texture authoring remain creative tasks. Muse3D automates the repeatable engineering part: export, optimize, validate, catalog, and publish.
+
+## Pruebas en Windows (PowerShell)
+
+Preparacion inicial:
+
+```powershell
+cd C:\Users\pc\Documents\proyectos\Museiq\muse3d
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -e .
+npm ci
+```
+
+Comprueba Python, Node, Blender y el destino de MuseRAG:
+
+```powershell
+.\.venv\Scripts\python.exe -m muse3d doctor
+```
+
+Prueba el pipeline sin generar archivos y luego ejecutalo realmente cuando el
+diagnostico sea correcto:
+
+```powershell
+.\.venv\Scripts\python.exe -m muse3d build smoke-cube --dry-run
+.\.venv\Scripts\python.exe -m muse3d build smoke-cube --publish
+```
+
+Si Blender no esta en `PATH`, define `BLENDER_PATH` en `.env` antes del build.

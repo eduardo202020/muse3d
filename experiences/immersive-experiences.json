@@ -1,0 +1,46 @@
+[
+  {
+    "id": "immersive-puerta-monumental-inca",
+    "roomId": "SALA_VR",
+    "title": "Puerta Monumental Inca",
+    "promptTitle": "Modo inmersivo disponible",
+    "description": "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
+    "ctaLabel": "Entrar al modo inmersivo",
+    "modelAssetPath": "assets/models/immersive/puerta_monumental_inca.glb",
+    "modelLabel": "puerta_monumental_inca.glb",
+    "tourExportName": "puertaMonumentalIncaWalkingTour"
+  },
+  {
+    "id": "immersive-sala-1",
+    "roomId": "SALA_VR",
+    "title": "Sala inmersiva andina",
+    "promptTitle": "Modo inmersivo disponible",
+    "description": "Esta sala ofrece una reconstruccion 3D para recorrer el espacio desde dentro antes de continuar con la visita normal.",
+    "ctaLabel": "Entrar al modo inmersivo",
+    "modelAssetPath": "assets/models/immersive/lugar.glb",
+    "modelLabel": "lugar.glb",
+    "tourExportName": "lugarWalkingTour"
+  },
+  {
+    "id": "immersive-ushnu",
+    "roomId": "SALA_VR",
+    "title": "Ushnu",
+    "promptTitle": "Modo inmersivo disponible",
+    "description": "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
+    "ctaLabel": "Entrar al modo inmersivo",
+    "modelAssetPath": "assets/models/immersive/ushnu.glb",
+    "modelLabel": "ushnu.glb",
+    "tourExportName": "ushnuWalkingTour"
+  },
+  {
+    "id": "immersive-ushnu-2",
+    "roomId": "SALA_VR",
+    "title": "Ushnu 2",
+    "promptTitle": "Modo inmersivo disponible",
+    "description": "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
+    "ctaLabel": "Entrar al modo inmersivo",
+    "modelAssetPath": "assets/models/immersive/ushnu-2.glb",
+    "modelLabel": "ushnu-2.glb",
+    "tourExportName": "ushnu2WalkingTour"
+  }
+]

@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 node_modules/
 .env
+*.blend1
 ejemplos/
 assets/work/
 assets/dist/

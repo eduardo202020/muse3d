@@ -39,8 +39,8 @@
     "promptTitle": "Modo inmersivo disponible",
     "description": "Recorrido inmersivo por una reconstruccion 3D preparada para headset.",
     "ctaLabel": "Entrar al modo inmersivo",
-    "modelAssetPath": "assets/models/immersive/ushnu-2.glb",
-    "modelLabel": "ushnu-2.glb",
+    "modelAssetPath": "assets/models/immersive/ushnu-2-mobile.glb",
+    "modelLabel": "ushnu-2-mobile.glb",
     "tourExportName": "ushnu2WalkingTour"
   }
 ]

@@ -26,7 +26,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-APP_ROOT = PROJECT_ROOT.parent / "museApp"
+APP_ROOT = PROJECT_ROOT.parent / "museiqApp"
 MANIFEST_PATH = PROJECT_ROOT / "experiences" / "immersive-experiences.json"
 SETUP_SCRIPT = PROJECT_ROOT / "scripts" / "setup_immersive_tour.py"
 SYNC_ROUTE_SCRIPT = PROJECT_ROOT / "scripts" / "sync_route_to_app.py"
